@@ -51,48 +51,87 @@ class TTSTransformer:
         fp.seek(0)
         return fp
 
-st.title("Chatbot Vocale")
 
-if 'messages' not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": "Sei un chatbot conversazionale, cerca di rispondere all'utente in modo naturale e coinvolgente massimo in 40 parole."}
-    ]
 
-if 'conversation' not in st.session_state:
-    st.session_state.conversation = []
 
-if 'pipeline' not in st.session_state:
-    st.session_state.pipeline = Pipeline([
-        ('stt', STTTransformer()),
-        ('llm', LLMTransformer(st.session_state.messages)),
-        ('tts', TTSTransformer())
-    ])
 
-st.write("Clicca il pulsante per iniziare la registrazione. Clicca di nuovo per fermarla.")
-audio_bytes = audio_recorder()
 
-if audio_bytes:
-    st.audio(audio_bytes, format="audio/wav")
 
-    with st.spinner("Elaborazione in corso..."):
-        try:
-            stt_result = st.session_state.pipeline.named_steps['stt'].transform(audio_bytes)
-            llm_result = st.session_state.pipeline.named_steps['llm'].transform(stt_result)
-            tts_result = st.session_state.pipeline.named_steps['tts'].transform(llm_result)
 
-            st.session_state.conversation.append(("Utente", stt_result))
-            st.session_state.conversation.append(("Assistente", llm_result))
+def main():
+    # --- Page Config ---
+    st.set_page_config(
+        page_title="Chatbot Vocale",
+        page_icon="🤖",
+        layout="centered",
+        initial_sidebar_state="expanded",
+    )
 
-            st.audio(tts_result, format='audio/mp3')
-        
-        except Exception as e:
-            st.error(f"Si è verificato un errore: {str(e)}")
+    # --- Header ---
+    st.title("Chatbot Vocale")
 
-# Visualizza la conversazione
-for speaker, message in st.session_state.conversation:
-    if speaker == "Utente":
-        st.write(f"👤 **Utente**: {message}")
+    # --- Side Bar ---
+    with st.sidebar:
+        cols_keys = st.columns(2)
+        with cols_keys[0]:
+            default_openai_api_key = os.getenv("OPENAI_API_KEY") if os.getenv("OPENAI_API_KEY") is not None else ""  # only for development environment, otherwise it should return None
+            with st.markdown("🔐 OpenAI"):
+                openai_api_key = st.text_input("Introduce your OpenAI API Key (https://platform.openai.com/)", value=default_openai_api_key, type="password")
+    
+    # --- Main Content ---
+    # Checking if the user has introduced the OpenAI API Key, if not, a warning is displayed
+    if (openai_api_key == "" or openai_api_key is None or "sk-" not in openai_api_key):
+        st.write("#")
+        st.warning("⬅️ Please Inserisci API di OpenAI") 
+
     else:
-        st.write(f"🤖 **Assistente**: {message}")
+        client = OpenAI(api_key=openai_api_key)
 
-st.info("Nota: Assicurati di avere un file .env con la tua API key di OpenAI e un microfono collegato.")
+    ##########################################################################################################
+    ##########################################################################################################
+    if 'messages' not in st.session_state:
+        st.session_state.messages = [
+            {"role": "system", "content": "Sei un chatbot conversazionale, cerca di rispondere all'utente in modo naturale e coinvolgente massimo in 40 parole."}
+        ]
+
+    if 'conversation' not in st.session_state:
+        st.session_state.conversation = []
+
+    if 'pipeline' not in st.session_state:
+        st.session_state.pipeline = Pipeline([
+            ('stt', STTTransformer()),
+            ('llm', LLMTransformer(st.session_state.messages)),
+            ('tts', TTSTransformer())
+        ])
+
+    st.write("Clicca il pulsante per iniziare la registrazione. Clicca di nuovo per fermarla.")
+    audio_bytes = audio_recorder()
+
+    if audio_bytes:
+        st.audio(audio_bytes, format="audio/wav")
+
+        with st.spinner("Elaborazione in corso..."):
+            try:
+                stt_result = st.session_state.pipeline.named_steps['stt'].transform(audio_bytes)
+                llm_result = st.session_state.pipeline.named_steps['llm'].transform(stt_result)
+                tts_result = st.session_state.pipeline.named_steps['tts'].transform(llm_result)
+
+                st.session_state.conversation.append(("Utente", stt_result))
+                st.session_state.conversation.append(("Assistente", llm_result))
+
+                st.audio(tts_result, format='audio/mp3')
+            
+            except Exception as e:
+                st.error(f"Si è verificato un errore: {str(e)}")
+
+    # Visualizza la conversazione
+    for speaker, message in st.session_state.conversation:
+        if speaker == "Utente":
+            st.write(f"👤 **Utente**: {message}")
+        else:
+            st.write(f"🤖 **Assistente**: {message}")
+
+    st.info("Nota: Assicurati di avere un file .env con la tua API key di OpenAI e un microfono collegato.")
+
+    if __name__=="__main__":
+        main()
