@@ -131,7 +131,5 @@ def main():
         else:
             st.write(f"🤖 **Assistente**: {message}")
 
-    st.info("Nota: Assicurati di avere un file .env con la tua API key di OpenAI e un microfono collegato.")
-
     if __name__=="__main__":
         main()
