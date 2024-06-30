@@ -6,11 +6,9 @@ import io
 from dotenv import load_dotenv
 from openai import OpenAI
 from audio_recorder_streamlit import audio_recorder
+import os
 
 load_dotenv()
-
-MODEL = "gpt-3.5-turbo"
-client = OpenAI()
 
 class STTTransformer:
     def transform(self, audio_bytes):
@@ -33,8 +31,8 @@ class LLMTransformer:
     def transform(self, text):
         try:
             self.messages.append({"role": "user", "content": text})
-            completion = client.chat.completions.create(
-                model=MODEL,
+            completion = st.session_state.client.chat.completions.create(
+                model=st.session_state.MODEL,
                 messages=self.messages
             )
             response = completion.choices[0].message.content
@@ -50,13 +48,6 @@ class TTSTransformer:
         tts.write_to_fp(fp)
         fp.seek(0)
         return fp
-
-
-
-
-
-
-
 
 def main():
     # --- Page Config ---
@@ -74,21 +65,18 @@ def main():
     with st.sidebar:
         cols_keys = st.columns(2)
         with cols_keys[0]:
-            default_openai_api_key = os.getenv("OPENAI_API_KEY") if os.getenv("OPENAI_API_KEY") is not None else ""  # only for development environment, otherwise it should return None
+            default_openai_api_key = os.getenv("OPENAI_API_KEY") if os.getenv("OPENAI_API_KEY") is not None else ""
             with st.markdown("🔐 OpenAI"):
                 openai_api_key = st.text_input("Introduce your OpenAI API Key (https://platform.openai.com/)", value=default_openai_api_key, type="password")
     
     # --- Main Content ---
-    # Checking if the user has introduced the OpenAI API Key, if not, a warning is displayed
     if (openai_api_key == "" or openai_api_key is None or "sk-" not in openai_api_key):
         st.write("#")
         st.warning("⬅️ Please Inserisci API di OpenAI") 
-
     else:
-        client = OpenAI(api_key=openai_api_key)
+        st.session_state.client = OpenAI(api_key=openai_api_key)
+        st.session_state.MODEL = "gpt-3.5-turbo"
 
-    ##########################################################################################################
-    ##########################################################################################################
     if 'messages' not in st.session_state:
         st.session_state.messages = [
             {"role": "system", "content": "Sei un chatbot conversazionale, cerca di rispondere all'utente in modo naturale e coinvolgente massimo in 40 parole."}
@@ -97,7 +85,7 @@ def main():
     if 'conversation' not in st.session_state:
         st.session_state.conversation = []
 
-    if 'pipeline' not in st.session_state:
+    if 'pipeline' not in st.session_state and 'client' in st.session_state and 'MODEL' in st.session_state:
         st.session_state.pipeline = Pipeline([
             ('stt', STTTransformer()),
             ('llm', LLMTransformer(st.session_state.messages)),
@@ -107,7 +95,7 @@ def main():
     st.write("Clicca il pulsante per iniziare la registrazione. Clicca di nuovo per fermarla.")
     audio_bytes = audio_recorder()
 
-    if audio_bytes:
+    if audio_bytes and 'client' in st.session_state and 'MODEL' in st.session_state:
         st.audio(audio_bytes, format="audio/wav")
 
         with st.spinner("Elaborazione in corso..."):
@@ -131,5 +119,5 @@ def main():
         else:
             st.write(f"🤖 **Assistente**: {message}")
 
-    if __name__=="__main__":
-        main()
+if __name__=="__main__":
+    main()
