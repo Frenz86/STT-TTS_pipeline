@@ -1,0 +1,7 @@
+streamlit==1.36
+scikit-learn
+SpeechRecognition
+gtts
+python-dotenv
+openai
+audio-recorder-streamlit
