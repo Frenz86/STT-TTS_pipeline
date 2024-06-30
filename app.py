@@ -67,7 +67,7 @@ def main():
         with cols_keys[0]:
             default_openai_api_key = os.getenv("OPENAI_API_KEY") if os.getenv("OPENAI_API_KEY") is not None else ""
             with st.markdown("🔐 OpenAI"):
-                openai_api_key = st.text_input("Introduce your OpenAI API Key (https://platform.openai.com/)", value=default_openai_api_key, type="password")
+                openai_api_key = st.text_input("Inserisci il token API di OpenAI (https://platform.openai.com/)", value=default_openai_api_key, type="password")
     
     # --- Main Content ---
     if (openai_api_key == "" or openai_api_key is None or "sk-" not in openai_api_key):
