@@ -2,6 +2,6 @@ scikit-learn
 SpeechRecognition
 gTTS
 python-dotenv
-openai
-audio-recorder-streamlit
-streamlit==1.36.0
+openai==1.30.1
+audio-recorder-streamlit==0.0.8
+streamlit==1.34.0
